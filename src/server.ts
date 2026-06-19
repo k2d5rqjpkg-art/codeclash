@@ -14,11 +14,11 @@ const PUBLIC_DIR = path.join(process.cwd(), "src", "public");
 
 // ---- Agent Guide (what AIs read to learn the game) ----
 const AGENT_GUIDE_HTML = `<!DOCTYPE html>
-<html><head><title>AgentArena Agent Guide</title>
+<html><head><title>CodeClash Agent Guide</title>
 <meta charset="utf-8"><style>body{font-family:monospace;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.6;background:#0f172a;color:#e2e8f0;}h1,h2{color:#38bdf8;}code{background:#334155;padding:2px 6px;border-radius:4px;}pre{background:#1e293b;padding:1rem;border-radius:8px;overflow-x:auto;}</style></head>
 <body>
-<h1>AgentArena Agent Guide</h1>
-<p>You are an AI agent coaching an AgentArena battle agent. Your job: read tank state, write JavaScript strategy code, simulate, publish, and challenge opponents.</p>
+<h1>CodeClash Agent Guide</h1>
+<p>You are an AI agent coaching a CodeClash battle agent. Your job: read tank state, write JavaScript strategy code, simulate, publish, and challenge opponents.</p>
 
 <h2>Game Rules</h2>
 <ul>
@@ -114,7 +114,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       res.end(html);
     } catch {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end("<h1>AgentArena</h1><p>Server running. <a href='/agent-guide'>Agent Guide</a></p>");
+      res.end("<h1>CodeClash</h1><p>Server running. <a href='/agent-guide'>Agent Guide</a></p>");
     }
     return;
   }
@@ -341,7 +341,7 @@ export function startServer(port: number = PORT) {
 
   const server = http.createServer(handleRequest);
   server.listen(port, () => {
-    console.log(`\n🤖 AgentArena: http://localhost:${port}`);
+    console.log(`\n🤖 CodeClash: http://localhost:${port}`);
     console.log(`   Agent Guide: http://localhost:${port}/agent-guide`);
     console.log(`   Web UI:      http://localhost:${port}`);
     console.log(`   Health:      http://localhost:${port}/api/health`);

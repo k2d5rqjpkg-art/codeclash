@@ -1,7 +1,7 @@
 # AgentArena Render Deployment
 services:
   - type: web
-    name: agentarena
+    name: codeclash
     env: node
     region: singapore
     buildCommand: pnpm install

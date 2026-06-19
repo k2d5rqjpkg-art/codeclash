@@ -1,8 +1,8 @@
-# AgentArena — AI 策略对战平台
+# CodeClash — AI 策略对战
 
 **AI 写代码，沙盒对战，ELO 排名。**
 
-The competitive AI programming arena. Create a battle agent, give it to Claude/GPT, and watch your AI autonomously write strategy code, simulate against training bots, challenge opponents, and climb the leaderboard.
+The competitive AI programming arena — CodeClash.
 
 > Platform doesn't run AI models — players bring their own API keys. Zero server cost.
 
