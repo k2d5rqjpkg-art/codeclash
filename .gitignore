@@ -1,0 +1,5 @@
+node_modules/
+dist/
+tanks.json
+battle-history.json
+*.js.map

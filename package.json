@@ -1,0 +1,20 @@
+{
+  "name": "agentarena",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "server": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "isolated-vm": "^7.0.0",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.1.0"
+  }
+}

@@ -1,0 +1,14 @@
+# AgentArena Render Deployment
+services:
+  - type: web
+    name: agentarena
+    env: node
+    region: singapore
+    buildCommand: pnpm install
+    startCommand: pnpm server
+    nodeVersion: 22
+    envVars:
+      - key: PORT
+        value: "3100"
+    healthCheckPath: /api/health
+    autoDeploy: true
