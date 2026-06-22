@@ -325,18 +325,20 @@ function defaultCode(skill: string): string {
 
 export function startServer(port: number = PORT) {
   // Seed built-in bots if no tanks exist
-  const tanks = loadTanks();
-  if (tanks.length === 0) {
-    const bots: Array<[string, string, string]> = [
-      ["nova-scout", TRAINING_BOTS["nova-scout"], "shield"],
-      ["azure-hunter", TRAINING_BOTS["azure-hunter"], "cloak"],
-      ["crimson-bastion", TRAINING_BOTS["crimson-bastion"], "sprint"],
-    ];
-    for (const [name, code, skill] of bots) {
-      const t = registerTank(name, code, skill, "built-in");
-      t.tankKeyHash = undefined; // built-in bots have no key
-      saveTanks(loadTanks());
+  try {
+    const tanks = loadTanks();
+    if (tanks.length === 0) {
+      const bots: Array<[string, string, string]> = [
+        ["nova-scout", TRAINING_BOTS["nova-scout"], "shield"],
+        ["azure-hunter", TRAINING_BOTS["azure-hunter"], "cloak"],
+        ["crimson-bastion", TRAINING_BOTS["crimson-bastion"], "sprint"],
+      ];
+      for (const [name, code, skill] of bots) {
+        registerTank(name, code, skill, "built-in");
+      }
     }
+  } catch (err) {
+    console.error("Seed error (non-fatal):", err);
   }
 
   const server = http.createServer(handleRequest);
@@ -351,4 +353,9 @@ export function startServer(port: number = PORT) {
 }
 
 // Start
-startServer();
+try {
+  startServer();
+} catch (err) {
+  console.error("FATAL:", err);
+  process.exit(1);
+}
