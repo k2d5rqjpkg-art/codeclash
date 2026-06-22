@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "start": "tsx src/server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "server": "tsx src/server.ts"
