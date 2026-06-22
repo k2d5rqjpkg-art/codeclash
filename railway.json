@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install"
   },
   "deploy": {
-    "startCommand": "tsx src/minimal.ts",
+    "startCommand": "pnpm server",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE"

@@ -353,9 +353,19 @@ export function startServer(port: number = PORT) {
 }
 
 // Start
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT:", err?.message || err, err?.stack || "");
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED_REJECTION:", reason);
+  process.exit(1);
+});
+
 try {
   startServer();
-} catch (err) {
-  console.error("FATAL:", err);
+  console.log("Server started OK");
+} catch (err: any) {
+  console.error("FATAL:", err?.message || err, err?.stack || "");
   process.exit(1);
 }
