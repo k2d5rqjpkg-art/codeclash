@@ -340,17 +340,15 @@ export function startServer(port: number = PORT) {
   }
 
   const server = http.createServer(handleRequest);
-  server.listen(port, () => {
-    console.log(`\n🤖 CodeClash: http://localhost:${port}`);
-    console.log(`   Agent Guide: http://localhost:${port}/agent-guide`);
-    console.log(`   Web UI:      http://localhost:${port}`);
-    console.log(`   Health:      http://localhost:${port}/api/health`);
-    console.log(`   Tanks:       ${loadTanks().length} registered\n`);
+  server.on("error", (err: any) => {
+    console.error("Server error:", err);
+    process.exit(1);
+  });
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`CodeClash running on port ${port}, tanks: ${loadTanks().length}`);
   });
   return server;
 }
 
-// Start if run directly
-if (process.argv[1]?.includes("server")) {
-  startServer();
-}
+// Start
+startServer();
