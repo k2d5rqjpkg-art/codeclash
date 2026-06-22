@@ -353,19 +353,21 @@ export function startServer(port: number = PORT) {
 }
 
 // Start
+import { writeSync } from "fs";
+writeSync(1, "BOOT: starting...\n");
 process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT:", err?.message || err, err?.stack || "");
+  writeSync(1, `BOOT CRASH: ${err?.message || err}\n${err?.stack || ""}\n`);
   process.exit(1);
 });
 process.on("unhandledRejection", (reason) => {
-  console.error("UNHANDLED_REJECTION:", reason);
+  writeSync(1, `BOOT REJECTION: ${reason}\n`);
   process.exit(1);
 });
 
 try {
   startServer();
-  console.log("Server started OK");
+  writeSync(1, "BOOT: server running\n");
 } catch (err: any) {
-  console.error("FATAL:", err?.message || err, err?.stack || "");
+  writeSync(1, `BOOT FATAL: ${err?.message || err}\n${err?.stack || ""}\n`);
   process.exit(1);
 }
