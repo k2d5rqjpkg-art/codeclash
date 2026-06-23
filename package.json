@@ -13,6 +13,7 @@
     "server": "tsx src/server.ts"
   },
   "dependencies": {
+    "isolated-vm": "^7.0.0",
     "tsx": "^4.20.0"
   },
   "devDependencies": {
