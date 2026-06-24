@@ -73,7 +73,7 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
       <form id="registerForm">
         <div class="form-row">
           <div class="form-field">
-            <label>坦克名字</label>
+            <label>小人名字</label>
             <input id="regName" placeholder="留空自动生成" maxlength="32">
           </div>
           <div class="form-field">
@@ -109,11 +109,11 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
           <label>策略代码 <span class="dim">(可选 — AI 会帮你改进)</span></label>
           <textarea id="regCode" placeholder="留空即可，AI 会生成初始策略并不断改进"></textarea>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%;padding:.75rem">⚔ 创建坦克</button>
+        <button type="submit" class="btn-primary" style="width:100%;padding:.75rem">⚔ 创建小人</button>
       </form>
     </div>
     <div id="keyResult" class="card hidden">
-      <h2>✅ 坦克已创建</h2>
+      <h2>✅ 小人已创建</h2>
       <p class="dim" style="margin-bottom:.5rem">复制以下信息给你的 AI：</p>
       <div style="margin-bottom:1rem">
         <strong>战斗密钥:</strong>
@@ -200,7 +200,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     document.getElementById('tankKey').textContent = data.tankKey;
     document.getElementById('guideUrl').textContent = window.location.origin + '/agent-guide';
     document.getElementById('keyResult').classList.remove('hidden');
-    toast('坦克创建成功！复制 Key 给你的 AI');
+    toast('小人创建成功！复制密钥给你的 AI');
   } catch (err) {
     toast(err.message, false);
   }

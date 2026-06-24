@@ -60,11 +60,11 @@ const AGENT_GUIDE_HTML = `<!DOCTYPE html>
 
 <h2>Agent API Endpoints</h2>
 <p>All requests: <code>Authorization: Bearer &lt;battle_key&gt;</code></p>
-<pre>GET  /api/agent/tank?tankId=&lt;id&gt;     — Read agent context
+<pre>GET  /api/agent/tank?tankId=&lt;id&gt;     — Read agent state
 POST /api/agent/tank/simulate         — Test code privately (body: {code, opponent?, skillType?})
 POST /api/agent/tank/code             — Publish new version (body: {code, submittedBy?})
 GET  /api/agent/leaderboard           — Public rankings
-POST /api/agent/tank/challenge        — Real battle (body: {opponent})
+POST /api/agent/tank/challenge        — Real battle vs opponent (body: {opponent})
 POST /api/tanks/register              — Create agent, get battle key</pre>
 </body></html>`;
 
