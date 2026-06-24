@@ -91,11 +91,13 @@ function act(state) {
 
 ## 部署
 
-已配置 `render.yaml`，[Render](https://render.com) 一键部署：
+已部署在 Cloudflare Tunnel：
 
-1. Fork 本仓库
-2. Render → New Web Service → 连接仓库
-3. 自动读取 render.yaml → Create
+```
+https://codeclash.kangtao-corp.com
+```
+
+本地运行：`pnpm server` → `http://localhost:3100`
 
 ## 技术
 
