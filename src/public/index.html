@@ -159,6 +159,16 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
       <h2>📜 对战记录</h2>
       <div id="historyList"><p class="dim">加载中...</p></div>
     </div>
+    <div id="replayPanel" class="card hidden" style="margin-top:1rem">
+      <h2>📺 回放</h2>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">
+        <button class="btn-primary btn-sm" onclick="replayPlay()">▶</button>
+        <button class="btn-secondary btn-sm" onclick="replayStop()">⏹</button>
+        <input type="range" id="replaySpeed" min="1" max="16" value="4" oninput="replaySpeed=this.value" style="width:80px">
+        <span class="dim" id="replayFrame">0/0</span>
+      </div>
+      <canvas id="replayCanvas" width="576" height="384" style="width:100%;max-width:576px;border-radius:6px;background:#0f172a"></canvas>
+    </div>
   </div>
 </main>
 
@@ -345,6 +355,72 @@ async function challenge(opponent) {
 
 // Initial load
 loadLeaderboard();
+
+// ── 2D Replay Viewer ──
+let replayData = null, replayTimer = null, replayIdx = 0, replaySpeed = 4;
+function replayPlay() {
+  if (!replayData) return;
+  replayStop();
+  replayTimer = setInterval(() => {
+    if (replayIdx >= replayData.length - 1) { replayStop(); return; }
+    replayIdx++;
+    drawReplayFrame();
+  }, 1000 / (8 * replaySpeed));
+}
+function replayStop() { if (replayTimer) { clearInterval(replayTimer); replayTimer = null; } }
+function drawReplayFrame() {
+  const canvas = document.getElementById('replayCanvas');
+  if (!canvas || !replayData) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
+
+  // Find last position events up to current frame
+  const tileSize = 32;
+  const events = replayData.filter(e => e.frame <= replayIdx);
+  let aPos = { x: 1, y: 10 }, bPos = { x: 16, y: 1 };
+  let projs = [];
+  for (const e of events) {
+    if (e.action === 'move' && e.to) { if (e.objectId === 'agentA') { aPos.x = e.to[0]; aPos.y = e.to[1]; } else { bPos.x = e.to[0]; bPos.y = e.to[1]; } }
+    if (e.action === 'created') projs.push({ x: e.x, y: e.y, owner: e.owner });
+    if (e.action === 'damage') projs = projs.filter(p => !(Math.abs(p.x - (e.target === 'agentA' ? aPos.x : bPos.x)) < 2 && Math.abs(p.y - (e.target === 'agentA' ? aPos.y : bPos.y)) < 2));
+  }
+
+  // Draw grid
+  ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 0.5;
+  for (let x = 0; x < 18; x++) for (let y = 0; y < 12; y++) ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+  // Draw capture zone
+  ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+  ctx.strokeRect(7 * tileSize, 4 * tileSize, 5 * tileSize, 5 * tileSize);
+
+  // Draw projectiles
+  for (const p of projs) {
+    ctx.fillStyle = p.owner === 'agentA' ? '#38bdf8' : '#f87171';
+    ctx.beginPath(); ctx.arc(p.x * tileSize + 16, p.y * tileSize + 16, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Draw agents
+  [{ pos: aPos, color: '#38bdf8' }, { pos: bPos, color: '#f87171' }].forEach(a => {
+    ctx.fillStyle = a.color;
+    ctx.beginPath(); ctx.arc(a.pos.x * tileSize + 16, a.pos.y * tileSize + 16, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(a.pos.x * tileSize + 16, a.pos.y * tileSize + 16, 3, 0, Math.PI * 2); ctx.fill();
+  });
+
+  document.getElementById('replayFrame').textContent = replayIdx + '/' + replayData.length;
+}
+
+async function viewReplay(matchId) {
+  try {
+    const data = await api('/api/matches/' + matchId + '/replay');
+    replayData = data.records || data;
+    replayIdx = 0;
+    document.getElementById('replayPanel').classList.remove('hidden');
+    drawReplayFrame();
+  } catch (err) {
+    toast('回放加载失败', false);
+  }
+}
 </script>
 </body>
 </html>

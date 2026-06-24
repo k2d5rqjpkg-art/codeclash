@@ -143,6 +143,20 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     return;
   }
 
+  // Match replay
+  if (method === "GET" && url.pathname.startsWith("/api/matches/") && url.pathname.endsWith("/replay")) {
+    const matchIdx = parseInt(url.pathname.split("/")[3]);
+    try {
+      if (fs.existsSync("battle-history.json")) {
+        const history = JSON.parse(fs.readFileSync("battle-history.json", "utf-8"));
+        const match = history[matchIdx];
+        if (match?.replay) { json(res, match.replay); return; }
+      }
+      json(res, []);
+    } catch { json(res, []); }
+    return;
+  }
+
   // ── Agent API ──
   const tank = authTank(req);
 
