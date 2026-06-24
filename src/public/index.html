@@ -106,8 +106,16 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
           </div>
         </div>
         <div class="form-field">
-          <label>策略代码 <span class="dim">(可选 — AI 会帮你改进)</span></label>
-          <textarea id="regCode" placeholder="留空即可，AI 会生成初始策略并不断改进"></textarea>
+          <label>🤖 AI 生成策略</label>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">
+            <input id="regPrompt" placeholder="一句话描述策略：做一个草丛伏击刺客" style="flex:1">
+            <button type="button" class="btn-primary" onclick="generateCode()" id="genBtn" style="white-space:nowrap">✨ AI 生成</button>
+          </div>
+          <input id="regApiKey" type="password" placeholder="Anthropic API Key (只用于生成，不存储)" style="font-size:0.8rem">
+        </div>
+        <div class="form-field">
+          <label>策略代码 <span class="dim">(自动生成或手写)</span></label>
+          <textarea id="regCode" placeholder="在上方输入描述点生成，或留空使用默认策略"></textarea>
         </div>
         <button type="submit" class="btn-primary" style="width:100%;padding:.75rem">⚔ 创建小人</button>
       </form>
@@ -213,6 +221,31 @@ function copyKey() {
 function copyGuide() {
   navigator.clipboard.writeText(document.getElementById('guideUrl').textContent);
   toast('Guide URL 已复制');
+}
+
+// AI code generation
+async function generateCode() {
+  const prompt = document.getElementById('regPrompt').value;
+  const apiKey = document.getElementById('regApiKey').value;
+  if (!prompt) { toast('请先输入策略描述', false); return; }
+  if (!apiKey) { toast('请先输入 Anthropic API Key', false); return; }
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = '⏳ 生成中...';
+  try {
+    const res = await fetch('/api/tanks/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, apiKey, skill: document.getElementById('regSkill').value })
+    });
+    const data = await res.json();
+    if (data.error) { toast(data.error, false); return; }
+    document.getElementById('regCode').value = data.code;
+    toast('策略已生成！');
+  } catch (err) {
+    toast('生成失败', false);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ AI 生成';
+  }
 }
 
 // Tanks list

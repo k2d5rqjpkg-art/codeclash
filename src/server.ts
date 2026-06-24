@@ -307,6 +307,47 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     return;
   }
 
+  // ── AI Code Generation ──
+  // POST /api/tanks/generate
+  if (method === "POST" && url.pathname === "/api/tanks/generate") {
+    const b = await body(req);
+    const prompt = b.prompt;
+    const apiKey = b.apiKey;
+    const skill = b.skill || "shield";
+    if (!prompt) { error(res, "prompt required"); return; }
+    if (!apiKey) { error(res, "apiKey required (your Anthropic key)"); return; }
+
+    try {
+      const { generateText } = await import("ai");
+      const { createAnthropic } = await import("@ai-sdk/anthropic");
+      const anthropic = createAnthropic({ apiKey });
+
+      const system = `You write JavaScript battle strategies for CodeClash. Output ONLY a function act(state) { ... } with no explanation.
+Rules:
+- 18x12 grid map with walls, grass (stealth+1.5x dmg), water (slow+no shoot)
+- Agent actions: move/shoot/skill/pickup/none + direction
+- Weapons: sword(melee 30dmg)/spear(mid 25dmg)/bow(range 20dmg) — must pick up from map
+- Skills: shield(block projectiles)/sprint(double speed)/cloak(invisible)
+- Center capture point: hold solo 120 frames to win
+- Enemy is null when hidden (grass/cloak/range>8)
+- Keep code under 80 lines, handle all edge cases`;
+
+      const result = await generateText({
+        model: anthropic("claude-haiku-4-5"),
+        system,
+        prompt: `Player request: "${prompt}". Agent skill: ${skill}. Write the strategy function.`,
+        maxOutputTokens: 1500,
+        temperature: 0.8,
+      });
+
+      const code = extractFn(result.text);
+      json(res, { code, skill });
+    } catch (err: any) {
+      json(res, { error: `AI generation failed: ${err.message}` }, 500);
+    }
+    return;
+  }
+
   // 404
   error(res, "Not found", 404);
 }
@@ -321,6 +362,22 @@ function defaultCode(skill: string): string {
   if(s.weaponCooldown===0&&Math.abs(e.x-s.x)<5)return{action:'shoot',direction:e.x>s.x?'right':'left'};
   return{action:'move',direction:e.x>s.x?'right':'left'};
 }`;
+}
+
+function extractFn(text: string): string {
+  const m = text.match(/```(?:js|javascript)?\s*\n?([\s\S]*?)```/);
+  if (m) return m[1].trim();
+  const idx = text.indexOf("function act");
+  if (idx >= 0) {
+    let brace = 0, started = false, end = idx;
+    for (let i = idx; i < text.length; i++) {
+      if (text[i] === "{") { brace++; started = true; }
+      if (text[i] === "}") { brace--; }
+      if (started && brace === 0) { end = i + 1; break; }
+    }
+    return text.slice(idx, end).trim();
+  }
+  return text.trim();
 }
 
 export function startServer(port: number = PORT) {
