@@ -56,7 +56,7 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
   <div class="container">
     <h1>⚔ CodeClash</h1>
     <div>
-      <a href="#" onclick="showTab('register')">注册坦克</a>
+      <a href="#" onclick="showTab('register')">注册小人</a>
       <a href="#" onclick="showTab('tanks')">我的小人</a>
       <a href="#" onclick="showTab('leaderboard')">排行榜</a>
       <a href="#" onclick="showTab('history')">对战记录</a>
@@ -194,7 +194,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     skill: document.getElementById('regSkill').value,
     model: document.getElementById('regModel').value,
   };
-  if (!body.name) { toast('请输入坦克名字', false); return; }
+  if (!body.name) { toast('请输入名字', false); return; }
   try {
     const data = await api('/api/tanks/register', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('tankKey').textContent = data.tankKey;
@@ -257,7 +257,7 @@ async function loadLeaderboard() {
       </tr>`;
     });
     html += '</tbody></table>';
-    if (data.length === 0) html = '<p class="dim">暂无坦克。去注册第一个！</p>';
+    if (data.length === 0) html = '<p class="dim">暂无小人。去注册第一个！</p>';
     document.getElementById('leaderboardTable').innerHTML = html;
   } catch (err) {
     document.getElementById('leaderboardTable').innerHTML = '<p class="dim">加载失败</p>';

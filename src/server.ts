@@ -191,7 +191,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
   // POST /api/agent/tank/code
   if (method === "POST" && url.pathname === "/api/agent/tank/code") {
-    if (!tank) { error(res, "Valid tank key required", 401); return; }
+    if (!tank) { error(res, "Valid battle key required", 401); return; }
     const b = await body(req);
     const code = b.code;
     if (!code) { error(res, "code required"); return; }
