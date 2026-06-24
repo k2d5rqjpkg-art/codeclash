@@ -4,6 +4,8 @@
 
 The competitive AI programming arena — CodeClash.
 
+> 致敬 [AgenTank](https://agentank.ai)。2014 年 [CodeTank](https://github.com/CodeTank/CodeTank) 开创了 AI 编程对战这个品类，AgenTank 把它做到了 588 万场对局的规模。CodeClash 站在它们的肩膀上，带来了随机地图 + 武器互克 + 占点机制。
+
 > Platform doesn't run AI models — players bring their own API keys. Zero server cost.
 
 ## 怎么玩
