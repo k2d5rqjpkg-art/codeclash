@@ -128,7 +128,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
   // Health
   if (url.pathname === "/api/health") {
-    json(res, { status: "ok", tanks: loadTanks().length });
+    json(res, { status: "ok", agents: loadTanks().length });
     return;
   }
 

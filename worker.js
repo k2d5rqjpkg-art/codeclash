@@ -190,9 +190,9 @@ export default {
     // Health
     if (url.pathname === "/api/health") return json({ status: "ok", name: "CodeClash", version: "0.2-cf" });
 
-    // Get tanks from KV
-    const getTanks = async () => { try { const d = await env.TANKS.get("tanks"); return d ? JSON.parse(d) : []; } catch { return []; } };
-    const setTanks = async (tanks) => { await env.TANKS.put("tanks", JSON.stringify(tanks)); };
+    // Get agents from KV
+    const getAgents = async () => { try { const d = await env.AGENTS.get("agents"); return d ? JSON.parse(d) : []; } catch { return []; } };
+    const setAgents = async (agents) => { await env.AGENTS.put("agents", JSON.stringify(agents)); };
 
     // Register
     if (method === "POST" && url.pathname === "/api/tanks/register") {
@@ -201,20 +201,20 @@ export default {
       const code = b.code || "function act(s){var e=s.enemy,cp=s.capturePoint;if(!s.self.weapon&&s.items.length){var it=s.items[0];if(Math.abs(it.x-s.self.x)<2)return{action:'pickup'};return{action:'move',direction:it.x>s.self.x?'right':'left'}}if(s.self.skillCooldown===0)return{action:'skill'};if(!e)return{action:'move',direction:cp.x>s.self.x?'right':'left'}if(s.self.weaponCooldown===0)return{action:'shoot',direction:e.x>s.self.x?'right':'left'};return{action:'move',direction:e.x>s.self.x?'right':'left'}}";
       const skill = b.skill || "shield";
       const model = b.model || "human";
-      const tanks = await getTanks();
-      const tankKey = "tk_" + crypto.randomUUID().replace(/-/g, "").slice(0, 32);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tankKey));
+      const agents = await getAgents();
+      const battleKey = "tk_" + crypto.randomUUID().replace(/-/g, "").slice(0, 32);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(battleKey));
       const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-      const tank = { name, code, skill, model, elo: 1200, wins: 0, losses: 0, draws: 0, tankKeyHash: hash, createdAt: new Date().toISOString(), lastBattle: null };
-      tanks.push(tank);
-      await setTanks(tanks);
-      return json({ name, tankKey, skill, model, agentGuideUrl: url.origin + "/agent-guide", message: "Give this battle key and guide URL to your AI agent." }, 201);
+      const agent = { name, code, skill, model, elo: 1200, wins: 0, losses: 0, draws: 0, keyHash: hash, createdAt: new Date().toISOString(), lastBattle: null };
+      agents.push(agent);
+      await setAgents(agents);
+      return json({ name, battleKey, skill, model, agentGuideUrl: url.origin + "/agent-guide", message: "Give this battle key and guide URL to your AI agent." }, 201);
     }
 
     // Leaderboard
     if (url.pathname === "/api/agent/leaderboard") {
-      const tanks = await getTanks();
-      return json(tanks.sort((a, b) => b.elo - a.elo).slice(0, 50).map((t, i) => ({ rank: i + 1, name: t.name, elo: t.elo, wins: t.wins, losses: t.losses, draws: t.draws, model: t.model, skill: t.skill })));
+      const agents = await getAgents();
+      return json(agents.sort((a, b) => b.elo - a.elo).slice(0, 50).map((t, i) => ({ rank: i + 1, name: t.name, elo: t.elo, wins: t.wins, losses: t.losses, draws: t.draws, model: t.model, skill: t.skill })));
     }
 
     // Challenge
@@ -223,12 +223,12 @@ export default {
       const auth = request.headers.get("Authorization") || "";
       const key = auth.startsWith("Bearer tk_") ? auth.slice(7) : "";
       if (!key) return error("Valid battle key required", 401);
-      const tanks = await getTanks();
+      const agents = await getAgents();
       const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
       const reqHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-      const me = tanks.find(t => t.tankKeyHash === reqHash);
+      const me = agents.find(t => t.keyHash === reqHash);
       if (!me) return error("Invalid key", 401);
-      const opp = tanks.find(t => t.name === b.opponent);
+      const opp = agents.find(t => t.name === b.opponent);
       if (!opp) return error("Opponent not found", 404);
 
       const seed = Date.now();
@@ -244,7 +244,7 @@ export default {
       opp.elo += (result.winner === 1 ? deltaA : result.winner === 0 ? Math.round(K * ((1-scoreA) - (1-expectedA))) : 0);
       if (result.winner === 0) { me.wins++; opp.losses++; } else if (result.winner === 1) { opp.wins++; me.losses++; } else { me.draws++; opp.draws++; }
       me.lastBattle = new Date().toISOString(); opp.lastBattle = new Date().toISOString();
-      await setTanks(tanks);
+      await setAgents(agents);
 
       return json({ winner: result.winner === 0 ? me.name : result.winner === 1 ? opp.name : null, resultReason: result.resultReason, totalFrames: result.totalFrames, captureProgress: result.captureProgress });
     }

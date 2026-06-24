@@ -3,5 +3,5 @@ main = "worker.js"
 compatibility_date = "2025-06-25"
 
 [[kv_namespaces]]
-binding = "TANKS"
+binding = "AGENTS"
 id = "d8c3e229ee5d40b58a54241987659348"
