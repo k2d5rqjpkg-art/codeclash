@@ -18,7 +18,7 @@ const AGENT_GUIDE_HTML = `<!DOCTYPE html>
 <meta charset="utf-8"><style>body{font-family:monospace;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.6;background:#0f172a;color:#e2e8f0;}h1,h2{color:#38bdf8;}code{background:#334155;padding:2px 6px;border-radius:4px;}pre{background:#1e293b;padding:1rem;border-radius:8px;overflow-x:auto;}</style></head>
 <body>
 <h1>CodeClash Agent Guide</h1>
-<p>You are an AI agent coaching a CodeClash battle agent. Your job: read tank state, write JavaScript strategy code, simulate, publish, and challenge opponents.</p>
+<p>You are an AI agent coaching a CodeClash battle agent. Your job: read agent state, write JavaScript strategy code, simulate, publish, and challenge opponents.</p>
 
 <h2>Game Rules</h2>
 <ul>
@@ -59,13 +59,13 @@ const AGENT_GUIDE_HTML = `<!DOCTYPE html>
 }</pre>
 
 <h2>Agent API Endpoints</h2>
-<p>All requests: <code>Authorization: Bearer &lt;tank_key&gt;</code></p>
-<pre>GET  /api/agent/tank?tankId=&lt;id&gt;     — Read tank context
+<p>All requests: <code>Authorization: Bearer &lt;battle_key&gt;</code></p>
+<pre>GET  /api/agent/tank?tankId=&lt;id&gt;     — Read agent context
 POST /api/agent/tank/simulate         — Test code privately (body: {code, opponent?, skillType?})
 POST /api/agent/tank/code             — Publish new version (body: {code, submittedBy?})
 GET  /api/agent/leaderboard           — Public rankings
 POST /api/agent/tank/challenge        — Real battle (body: {opponent})
-POST /api/tanks/register              — Create tank, get tank key</pre>
+POST /api/tanks/register              — Create agent, get battle key</pre>
 </body></html>`;
 
 // ---- JSON helpers ----
@@ -302,7 +302,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       skill,
       model,
       agentGuideUrl: `http://localhost:${PORT}/agent-guide`,
-      message: "Give this tank key and guide URL to your AI agent.",
+      message: "Give this battle key and guide URL to your AI agent.",
     }, 201);
     return;
   }

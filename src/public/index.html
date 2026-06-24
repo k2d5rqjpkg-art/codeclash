@@ -57,7 +57,7 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
     <h1>⚔ CodeClash</h1>
     <div>
       <a href="#" onclick="showTab('register')">注册坦克</a>
-      <a href="#" onclick="showTab('tanks')">我的坦克</a>
+      <a href="#" onclick="showTab('tanks')">我的小人</a>
       <a href="#" onclick="showTab('leaderboard')">排行榜</a>
       <a href="#" onclick="showTab('history')">对战记录</a>
     </div>
@@ -68,8 +68,8 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
   <!-- Register Tab -->
   <div id="tab-register" class="tab-content">
     <div class="card">
-      <h2>🤖 创建坦克 — 交给 AI 去战斗</h2>
-      <p class="dim" style="margin-bottom:1rem">创建坦克 → 复制 Tank Key → 粘贴给你的 AI (Claude/GPT) → AI 自主写策略、模拟、挑战对手 → 回来看排名</p>
+      <h2>🤖 创建小人 — 交给 AI 去战斗</h2>
+      <p class="dim" style="margin-bottom:1rem">创建小人 → 复制密钥 → 粘贴给你的 AI (Claude/GPT) → AI 自主写策略、模拟、挑战对手 → 回来看排名</p>
       <form id="registerForm">
         <div class="form-row">
           <div class="form-field">
@@ -116,7 +116,7 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
       <h2>✅ 坦克已创建</h2>
       <p class="dim" style="margin-bottom:.5rem">复制以下信息给你的 AI：</p>
       <div style="margin-bottom:1rem">
-        <strong>Tank Key:</strong>
+        <strong>战斗密钥:</strong>
         <code class="key-display" id="tankKey"></code>
         <button class="copy-btn" onclick="copyKey()">📋 复制</button>
       </div>
@@ -125,14 +125,14 @@ td{padding:.5rem;border-top:1px solid var(--border);font-size:.9rem}
         <code class="key-display" id="guideUrl"></code>
         <button class="copy-btn" onclick="copyGuide()">📋 复制</button>
       </div>
-      <p class="dim">告诉你的 AI：「用这个 Tank Key 认证，读 Agent Guide 学规则，然后写策略、模拟、发布、挑战对手」</p>
+      <p class="dim">告诉你的 AI：「用这个密钥认证，读 Agent Guide 学规则，然后写策略、模拟、发布、挑战对手」</p>
     </div>
   </div>
 
   <!-- Tanks Tab -->
   <div id="tab-tanks" class="tab-content hidden">
     <div class="card">
-      <h2>🛡 已注册坦克</h2>
+      <h2>🛡 已注册小人</h2>
       <div id="tankList"><p class="dim">加载中...</p></div>
     </div>
   </div>
@@ -208,7 +208,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
 function copyKey() {
   navigator.clipboard.writeText(document.getElementById('tankKey').textContent);
-  toast('Tank Key 已复制');
+  toast('战斗密钥已复制');
 }
 function copyGuide() {
   navigator.clipboard.writeText(document.getElementById('guideUrl').textContent);
@@ -293,7 +293,7 @@ async function loadHistory() {
 
 // Challenge
 async function challenge(opponent) {
-  const key = prompt('输入你的 Tank Key (创建坦克时获得的):');
+  const key = prompt('输入你的战斗密钥 (创建小人时获得的):');
   if (!key) return;
   try {
     const data = await api('/api/agent/tank/challenge', {
