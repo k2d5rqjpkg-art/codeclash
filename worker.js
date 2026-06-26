@@ -184,7 +184,7 @@ async function runGame(treeA, treeB, map, seed, skA, skB) {
     for(var ti=0;ti<a.length;ti++){var ag3=a[ti];if(ag3.sht>0&&--ag3.sht===0)ag3.sh=0;if(ag3.clt>0){ag3.clt--;if(ag3.clt===0)ag3.cl=0;if(tm(map,ag3.x,ag3.y).s&&ag3.clt>0)ag3.clt++}if(ag3.spt>0&&--ag3.spt===0)ag3.sp=0;if(ag3.frt>0&&--ag3.frt===0)ag3.fr=0;if(ag3.stt>0&&--ag3.stt===0)ag3.st=0;if(ag3.pot>0&&--ag3.pot===0)ag3.po=0;if(ag3.skc>0)ag3.skc--;if(ag3.wc>0)ag3.wc--}
     for(var ii=0;ii<its.length;ii++){var it2=its[ii];if(!it2.active&&it2.rs>0&&--it2.rs===0)it2.active=1}
   }
-  return{winner:winner,resultReason:reason,totalFrames:rec.length?rec[rec.length-1]?.frame+1:0,records:rec,captureProgress:{a:a[0].cf,b:a[1].cf}}
+  return{winner:winner,resultReason:reason,totalFrames:frame+1,records:rec,captureProgress:{a:a[0].cf,b:a[1].cf}}
 }
 
 addEventListener("fetch",function(event){event.respondWith(handle(event))});
