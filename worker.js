@@ -31,42 +31,78 @@ function resolveDir(state, dir) {
   return dir||"right";
 }
 
-function evalTree(node, state) {
+function evalTree(node, state, map) {
   if(!node) return {action:"none"};
-  // Sequence: try each child, first valid wins
   if(node.sequence) {
     for(var i=0;i<node.sequence.length;i++){
-      var r=evalTree(node.sequence[i],state);
+      var r=evalTree(node.sequence[i],state,map);
       if(r.action!=="none")return r;
     }
     return {action:"none"};
   }
-  // Conditional
   if(node.if) {
-    var val=getProp(state,node.if.path);
-    var cond=node.if;
-    var match=false;
-    if(cond.op==="lt"&&val<cond.value)match=true;
-    if(cond.op==="lte"&&val<=cond.value)match=true;
-    if(cond.op==="gt"&&val>cond.value)match=true;
-    if(cond.op==="gte"&&val>=cond.value)match=true;
-    if(cond.op==="eq"&&val===cond.value)match=true;
-    if(cond.op==="truthy"&&val)match=true;
-    if(cond.op==="falsy"&&!val)match=true;
-    if(cond.op==="null"&&val===null)match=true;
-    if(cond.op==="notnull"&&val!==null)match=true;
-    if(cond.op==="active"&&state.items&&state.items.some(function(it){return it.active}))match=true;
-    if(cond.op==="has_enemy")match=!!state.enemy;
-    if(cond.op==="no_enemy")match=!state.enemy;
-    return evalTree(match?node.then:node.else,state);
+    var cond=node.if,match=false,val;
+    // Standard comparisons
+    if(cond.op==="lt"||cond.op==="lte"||cond.op==="gt"||cond.op==="gte"||cond.op==="eq"||cond.op==="neq"){
+      val=getProp(state,cond.path);
+      if(cond.op==="lt"&&val<cond.value)match=true;
+      else if(cond.op==="lte"&&val<=cond.value)match=true;
+      else if(cond.op==="gt"&&val>cond.value)match=true;
+      else if(cond.op==="gte"&&val>=cond.value)match=true;
+      else if(cond.op==="eq"&&val===cond.value)match=true;
+      else if(cond.op==="neq"&&val!==cond.value)match=true;
+    }
+    // Boolean checks
+    else if(cond.op==="truthy")match=!!getProp(state,cond.path);
+    else if(cond.op==="falsy")match=!getProp(state,cond.path);
+    else if(cond.op==="null")match=getProp(state,cond.path)===null;
+    else if(cond.op==="notnull")match=getProp(state,cond.path)!==null;
+    else if(cond.op==="active")match=state.items&&state.items.some(function(it){return it.active});
+    else if(cond.op==="has_enemy")match=!!state.enemy;
+    else if(cond.op==="no_enemy")match=!state.enemy;
+    // Distance-based
+    else if(cond.op==="dist_lt"&&state.enemy){var d=dist(state.self,state.enemy);match=d<cond.value}
+    else if(cond.op==="dist_gt"&&state.enemy){var d=dist(state.self,state.enemy);match=d>cond.value}
+    else if(cond.op==="near_item"){
+      var found=false;
+      if(state.items)for(var ni=0;ni<state.items.length;ni++){
+        var it=state.items[ni];
+        if(it.active&&dist(state.self,it)<(cond.value||2)){found=true;break}
+      }
+      match=found;
+    }
+    // Terrain
+    else if(cond.op==="on_terrain"){
+      var t=state.self.onTerrain||"open";
+      match=(t===cond.value||(cond.value==="cover"&&(t==="grass"||t==="open")));
+    }
+    // Capture zone
+    else if(cond.op==="in_capture"){
+      var cp=state.capturePoint;
+      match=cp&&Math.abs(state.self.x-cp.x)+Math.abs(state.self.y-cp.y)<=cp.radius;
+    }
+    // Enemy facing
+    else if(cond.op==="enemy_facing"&&state.enemy){
+      var ef=state.enemy.facing,sf=state.self.facing;
+      if(cond.value==="away"){var dx=state.enemy.x-state.self.x,dy=state.enemy.y-state.self.y;
+        match=(ef==="right"&&dx<0)||(ef==="left"&&dx>0)||(ef==="up"&&dy>0)||(ef==="down"&&dy<0)}
+      else if(cond.value==="toward"){var dx=state.enemy.x-state.self.x,dy=state.enemy.y-state.self.y;
+        match=(ef==="right"&&dx>0)||(ef==="left"&&dx<0)||(ef==="up"&&dy<0)||(ef==="down"&&dy>0)}
+    }
+    // HP threshold
+    else if(cond.op==="hp_below"){
+      var hp=getProp(state,"self.hp");match=hp<cond.value;
+    }
+    return evalTree(match?node.then:node.else,state,map);
   }
-  // Action node
   if(node.action==="move"||node.action==="shoot") {
     return {action:node.action, direction:resolveDir(state,node.dir||"right")};
   }
-  if(node.action==="skill"||node.action==="pickup"||node.action==="none") {
-    return {action:node.action};
+  if(node.action==="flee"){
+    var d="left";if(state.enemy){var dx=state.enemy.x-state.self.x;d=dx>0?"left":"right"}
+    return {action:"move",direction:d};
   }
+  if(node.action==="skill"||node.action==="pickup"||node.action==="none")return {action:node.action};
   return {action:"none"};
 }
 
@@ -171,7 +207,7 @@ function runAgent(tree, state) {
       inCapture: Math.abs(state.self.x-state.capturePoint.x)+Math.abs(state.self.y-state.capturePoint.y)<=state.capturePoint.radius,
       onTerrain: state.terrain[Math.round(state.self.y)]?.[Math.round(state.self.x)]?.type||"open",
     };
-    var result = evalTree(tree, fullState);
+    var result = evalTree(tree, fullState, state.map);
     return result;
   } catch(e) { return {action:"none"}; }
 }
