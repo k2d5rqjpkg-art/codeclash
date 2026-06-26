@@ -514,7 +514,7 @@ function drawReplayFrame() {
 
 async function viewReplay(matchId) {
   try {
-    const data = await api('/api/matches/' + matchId + '/replay');
+    var data = await api('/match/' + matchId);
     replayData = data.records || data;
     replayIdx = 0;
     document.getElementById('replayPanel').classList.remove('hidden');
