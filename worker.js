@@ -120,6 +120,32 @@ function genMap(seed){var R=rng(seed||Date.now()),W=18,H=12,CX=9,CY=6,t=[],y,x,i
 
 var WPN={sword:{dmg:30,range:1.5,cd:8},spear:{dmg:25,range:3,cd:10},bow:{dmg:20,range:8,cd:6}};
 var SKL={shield:{cd:20,dur:4},sprint:{cd:15,dur:6},cloak:{cd:25,dur:8},freeze:{cd:29,dur:2},stun:{cd:20,dur:6},poison:{cd:20,dur:4},teleport:{cd:40,dur:1}};
+// Counter matrix: attackerSkill vs defenderSkill → effect modifier
+// effect: "bonus"=attacker gets bonus, "resist"=defender resists, "break"=breaks defender
+var COUNTERS={
+  sword_shield:{type:"break",desc:"sword pierces shield"},
+  shield_bow:{type:"block",desc:"shield blocks arrow"},
+  freeze_sprint:{type:"break",desc:"freeze stops sprint cold"},
+  sprint_cloak:{type:"reveal",desc:"sprint reveals cloak"},
+  cloak_poison:{type:"resist",desc:"cloak resists poison"},
+  poison_shield:{type:"half",desc:"poison halves shield duration"},
+  teleport_freeze:{type:"escape",desc:"teleport escapes freeze"},
+  stun_teleport:{type:"block",desc:"stun blocks teleport"},
+  poison_teleport:{type:"slow",desc:"poisoned teleport range halved"},
+  shield_stun:{type:"resist",desc:"shield reduces stun duration"},
+  freeze_cloak:{type:"reveal",desc:"freeze reveals cloaked target"},
+  stun_sprint:{type:"break",desc:"stun cancels sprint"}
+};
+function getCounter(aSkill,dSkill){return COUNTERS[aSkill+"_"+dSkill]||null}
+function applyCounter(atk,def,counter){
+  if(!counter)return;
+  if(counter.type==="break"){def[counter.effectTarget||"active"]=0;def[(counter.effectTarget||"active")+"Timer"]=0}
+  if(counter.type==="block"){return true} // action blocked
+  if(counter.type==="half"&&def.shieldTimer>0)def.shieldTimer=Math.max(1,Math.floor(def.shieldTimer/2))
+  if(counter.type==="slow")atk.poisonedSlow=1
+  if(counter.type==="escape"&&atk.fr){atk.fr=0;atk.frt=0}
+  return false
+}
 var TER={open:{spd:1,dmg:1,s:0},grass:{spd:1,dmg:1.5,s:1},water:{spd:.5,dmg:.7,s:0},wall:{spd:0,dmg:0,s:0}};
 function tile(m,x,y){return y<0||y>=m.height||x<0||x>=m.width?{type:"wall"}:m.tiles[y][x]}
 function solid(m,x,y){return tile(m,x,y).type==="wall"}
@@ -205,7 +231,7 @@ async function handle(event){
     var b=await body();
     var agents=await kvGet("agents");
     var key="tk_"+uid()+uid();
-    var tree=parseStrategy(b.code);
+    var tree=b.tree||parseStrategy(b.code);
     agents.push({name:b.name||"Agent-"+uid(),tree:tree,code:b.code||"",skill:b.skill||"shield",model:b.model||"human",elo:1200,wins:0,losses:0,draws:0,keyHash:await sha256(key),createdAt:new Date().toISOString(),lastBattle:null});
     await kvSet("agents",agents);
     return json({name:agents[agents.length-1].name,battleKey:key,skill:agents[agents.length-1].skill},201)
@@ -218,7 +244,7 @@ async function handle(event){
 
   if(m==="POST"&&url.pathname==="/api/agent/tank/simulate"){
     var b=await body();
-    var tree=parseStrategy(b.code);
+    var tree=b.tree||parseStrategy(b.code);
     var map=genMap(Date.now());
     var r=await runGame(tree,parseStrategy(null),map,Date.now(),b.skillType||"shield","shield");
     return json({winner:r.winner,resultReason:r.resultReason,totalFrames:r.totalFrames})

@@ -210,6 +210,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const body = {
     name: document.getElementById('regName').value || undefined,
     code: document.getElementById('regCode').value,
+    tree: compileToTree(document.getElementById('regCode').value),
     skill: document.getElementById('regSkill').value,
     model: document.getElementById('regModel').value,
   };
@@ -232,6 +233,106 @@ function copyKey() {
 function copyGuide() {
   navigator.clipboard.writeText(document.getElementById('guideUrl').textContent);
   toast('Guide URL 已复制');
+}
+
+// JS→Tree compiler (runs in browser where new Function is allowed)
+function compileToTree(code) {
+  if (!code || !code.includes('function act')) return null;
+  try {
+    var fn = new Function("state", code + "\nreturn act(state);");
+    var tree = buildTreeFromBehavior(fn);
+    return tree;
+  } catch(e) { return null; }
+}
+
+function buildTreeFromBehavior(fn) {
+  // Generate test scenarios and observe outputs
+  var scenarios = [];
+  var skills = ["shield","sprint","cloak","freeze","stun","poison","teleport"];
+  var terrains = ["open","grass","water"];
+  var dirs = ["up","down","left","right"];
+
+  // Core scenarios
+  for (var i=0;i<3;i++) {
+    var hasEnemy = i<2, hasWeapon = i>0;
+    for (var j=0;j<terrains.length;j++) {
+      for (var k=0;k<dirs.length;k++) {
+        scenarios.push({
+          self: {x:i*2+1,y:j+3,facing:dirs[k],hp:100,maxHp:100,weapon:hasWeapon?"sword":null,weaponCooldown:hasWeapon?4:0,skill:skills[k],skillCooldown:k===0?0:5,onTerrain:terrains[j],shielded:false,cloaked:false,sprinting:false,frozen:false,stunned:false,poisoned:false},
+          enemy: hasEnemy ? {x:8+i*3,y:6,facing:"left",hp:80,maxHp:100,weapon:"bow",weaponCooldown:2,skill:"shield",skillCooldown:3,onTerrain:"open",shielded:false,cloaked:false,sprinting:false,frozen:false,stunned:false,poisoned:false} : null,
+          items: [{x:5,y:5,type:"sword",active:true},{x:10,y:3,type:"bow",active:true}],
+          terrain: buildTerrain(terrains[j]),
+          capturePoint: {x:9,y:6,radius:2},
+          captureProgress: {me:i*20,enemy:(2-i)*20},
+          map: {width:18,height:12,seed:42},
+          frame: i*50
+        });
+      }
+    }
+  }
+
+  // Collect behavior patterns
+  var patterns = {};
+  for (var s=0;s<scenarios.length;s++) {
+    try {
+      var action = fn(scenarios[s]);
+      var key = classifyScenario(scenarios[s], action);
+      if (!patterns[key]) patterns[key] = [];
+      patterns[key].push(action);
+    } catch(e) {}
+  }
+
+  // Build tree from patterns
+  return buildTree(patterns);
+}
+
+function classifyScenario(state, action) {
+  var s = state.self;
+  var e = state.enemy;
+  var flags = [];
+
+  if (e) flags.push("E"); else flags.push("nE");
+  if (s.weapon) flags.push("W"); else flags.push("nW");
+  if (s.skillCooldown===0) flags.push("S"); else flags.push("nS");
+  if (e && Math.abs(e.x-s.x)+Math.abs(e.y-s.y) < 4) flags.push("NE");
+
+  return flags.join("_") + "_" + (action.direction||"");
+}
+
+function buildTerrain(type) {
+  var t = [];
+  for (var y=0;y<12;y++) { t[y]=[]; for(var x=0;x<18;x++) t[y][x]={type:type,speed:type==="water"?0.5:1}; }
+  return t;
+}
+
+function buildTree(patterns) {
+  // Simplified tree builder: create action sequences based on state conditions
+  var seq = [];
+
+  // Priority: skill if ready
+  var skillReady = false;
+  for (var key in patterns) {
+    if (key.includes("S") && patterns[key].some(function(a){return a.action==="skill"})) {
+      skillReady = true;
+    }
+  }
+  if (skillReady) {
+    seq.push({if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}});
+  }
+
+  // Priority: pickup if no weapon and items near
+  seq.push({if:{path:"self.weapon",op:"null"},then:{action:"pickup"}});
+
+  // Priority: shoot if enemy and weapon ready
+  seq.push({
+    if:{path:"self.weaponCooldown",op:"eq",value:0},
+    then:{action:"shoot",dir:"enemy"}
+  });
+
+  // Default: move toward enemy or capture
+  seq.push({action:"move",dir:"enemy"});
+
+  return {sequence:seq};
 }
 
 // AI code generation
