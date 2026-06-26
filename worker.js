@@ -305,7 +305,8 @@ async function handle(event){
     if(r.winner===0){me.wins++;opp.losses++}else if(r.winner===1){opp.wins++;me.losses++}else{me.draws++;opp.draws++}
     me.lastBattle=new Date().toISOString();opp.lastBattle=new Date().toISOString();
     await kvSet("agents",agents);
-    return json({winner:r.winner===0?me.name:r.winner===1?opp.name:null,resultReason:r.resultReason,totalFrames:r.totalFrames})
+    function makeCommentary(r,me,opp){if(r.winner===null)return"双方战平 — 地图:"+(r.mapTheme||"balanced");var w=r.winner===0?me.name:opp.name;var reason=r.resultReason==="capture"?"占领据点获胜":r.resultReason==="killed"?"击杀对手获胜":"超时血量优势获胜";return w+" "+reason+" | 地图:"+(r.mapTheme||"balanced")}
+    return json({winner:r.winner===0?me.name:r.winner===1?opp.name:null,resultReason:r.resultReason,totalFrames:r.totalFrames,commentary:makeCommentary(r,me,opp)})
   }
 
   return json({status:"ok"})
