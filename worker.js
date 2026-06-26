@@ -98,6 +98,15 @@ function evalTree(node, state, map) {
   if(node.action==="move"||node.action==="shoot") {
     return {action:node.action, direction:resolveDir(state,node.dir||"right")};
   }
+  if(node.action==="hunt_item"){
+    var best=null,bestDist=99;
+    if(state.items)for(var i=0;i<state.items.length;i++){
+      var it=state.items[i];
+      if(it.active){var d=dist(state.self,it);if(d<bestDist){bestDist=d;best=it}}
+    }
+    if(best){return{action:"move",direction:best.x>state.self.x?"right":best.x<state.self.x?"left":best.y>state.self.y?"down":"up"}}
+    return{action:"move",dir:"enemy"};
+  }
   if(node.action==="flee"){
     var d="left";if(state.enemy){var dx=state.enemy.x-state.self.x;d=dx>0?"left":"right"}
     return {action:"move",direction:d};
@@ -110,39 +119,58 @@ function evalTree(node, state, map) {
 var DEFAULT_TREES={
   aggressive:{
     sequence:[
-      {sequence:[
-        {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
-        {if:{path:"self.weaponCooldown",op:"eq",value:0},then:{action:"shoot",dir:"enemy"}},
-        {action:"move",dir:"enemy"}
-      ]}
+      {if:{path:"self.weapon",op:"null"},then:{action:"hunt_item"}},
+      {if:{op:"no_enemy"},then:{action:"move",dir:"enemy"}},
+      {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
+      {if:{op:"dist_lt",value:5},then:{action:"shoot",dir:"enemy"}},
+      {action:"move",dir:"enemy"}
     ]
   },
   tactical:{
     sequence:[
-      {if:{path:"self.weapon",op:"null"},then:{sequence:[
-        {if:{op:"active"},then:{action:"pickup"},else:{action:"move",dir:"toward_item"}}
-      ]}},
+      {if:{op:"hp_below",value:30},then:{action:"flee"}},
+      {if:{path:"self.weapon",op:"null"},then:{action:"hunt_item"}},
       {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
-      {if:{path:"enemy",op:"null"},then:{action:"move",dir:"capture"}},
-      {if:{path:"self.weaponCooldown",op:"eq",value:0},then:{action:"shoot",dir:"enemy"}},
+      {if:{op:"no_enemy"},then:{action:"move",dir:"capture"}},
+      {if:{op:"dist_lt",value:4},then:{action:"shoot",dir:"enemy"}},
       {action:"move",dir:"capture"}
     ]
   },
   capturer:{
     sequence:[
+      {if:{op:"in_capture"},then:{action:"none"}},
       {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
+      {if:{op:"dist_lt",value:4},then:{action:"shoot",dir:"enemy"}},
       {action:"move",dir:"capture"}
+    ]
+  },
+  berserker:{
+    sequence:[
+      {if:{op:"no_enemy"},then:{action:"move",dir:"enemy"}},
+      {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
+      {if:{op:"dist_lt",value:8},then:{action:"shoot",dir:"enemy"}},
+      {action:"move",dir:"enemy"}
+    ]
+  },
+  sniper:{
+    sequence:[
+      {if:{op:"on_terrain",value:"grass"},then:{action:"none"}},
+      {if:{path:"self.weapon",op:"null"},then:{if:{op:"near_item",value:2},then:{action:"pickup"},else:{action:"move",dir:"enemy"}}},
+      {if:{op:"no_enemy"},then:{action:"move",dir:"capture"}},
+      {if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}},
+      {if:{op:"dist_lt",value:7},then:{action:"shoot",dir:"enemy"}},
+      {action:"move",dir:"enemy"}
     ]
   }
 };
 
 function parseStrategy(code) {
-  // Extract decision logic from code string into tree
-  // Default: aggressive strategy
   if(!code)return DEFAULT_TREES.aggressive;
-  // Simple pattern matching for common strategy patterns
-  if(code.indexOf("capture")>code.indexOf("enemy"))return DEFAULT_TREES.capturer;
-  if(code.indexOf("cloak")>0||code.indexOf("grass")>0)return DEFAULT_TREES.tactical;
+  // Match code patterns to strategy types
+  if(code.indexOf("flee")>0||code.indexOf("hp")>0||code.indexOf("hp_below")>0)return DEFAULT_TREES.tactical;
+  if(code.indexOf("capture")>code.indexOf("enemy")||code.indexOf("cap")>0)return DEFAULT_TREES.capturer;
+  if(code.indexOf("cloak")>0||code.indexOf("grass")>0||code.indexOf("snipe")>0)return DEFAULT_TREES.sniper;
+  if(code.indexOf("shoot")>0&&code.indexOf("enemy")>0&&code.length>100)return DEFAULT_TREES.berserker;
   return DEFAULT_TREES.aggressive;
 }
 
@@ -228,7 +256,7 @@ async function runGame(treeA, treeB, map, seed, skA, skB) {
     }
   }
 
-  for(var frame=0;frame<200;frame++){
+  for(var frame=0;frame<80;frame++){
     var actA=runAgent(treeA,buildState(0,frame)),actB=runAgent(treeB,buildState(1,frame));
     for(var ei=0;ei<2;ei++){var idx=ei,act=ei===0?actA:actB,ag=a[idx],en=a[1-idx];if(!ag.alive||ag.fr)continue;
       if(act.action==="move"&&act.direction){var d=act.direction;if(ag.st){var ds=["up","down","left","right"];d=ds[Math.floor(Math.random()*4)]}var dx=0,dy=0;if(d==="left")dx=-1;if(d==="right")dx=1;if(d==="up")dy=-1;if(d==="down")dy=1;ag.f=d;var spd=ag.sp?2:(ag.po?1:1),tmod=tm(map,ag.x,ag.y).spd,s;for(s=0;s<Math.max(1,Math.round(spd*tmod));s++){var nx=ag.x+dx,ny=ag.y+dy;if(nx<0||nx>=map.width||ny<0||ny>=map.height||solid(map,nx,ny))break;ag.x=nx;ag.y=ny}}
@@ -240,8 +268,8 @@ async function runGame(treeA, treeB, map, seed, skA, skB) {
     ps=ps.filter(function(p){return!(p.x<0||p.x>=map.width||p.y<0||p.y>=map.height||solid(map,Math.round(p.x),Math.round(p.y)))});
     for(var agi=0;agi<a.length;agi++){var ag2=a[agi];if(!ag2.alive)continue;for(var pj=ps.length-1;pj>=0;pj--){var p2=ps[pj];if(p2.o===ag2.id)continue;if(dist(ag2,p2)<2){var dmg2=p2.dmg*tm(map,ag2.x,ag2.y).dmg;if(ag2.sh){ag2.sh=0;ag2.sht=0;ps.splice(pj,1);continue}ag2.hp-=dmg2;ps.splice(pj,1);if(ag2.hp<=0){ag2.hp=0;ag2.alive=0}}}}
     var aIn=inCap(a[0],cp),bIn=inCap(a[1],cp);if(aIn&&!bIn)a[0].cf++;else if(bIn&&!aIn)a[1].cf++;
-    if(a[0].cf>=120){winner=0;reason="capture";break}if(a[1].cf>=120){winner=1;reason="capture";break}
-    if(frame>=199){if(a[0].hp>a[1].hp)winner=0;else if(a[1].hp>a[0].hp)winner=1;else if(a[0].cf>a[1].cf)winner=0;else if(a[1].cf>a[0].cf)winner=1;reason="timeout";break}
+    if(a[0].cf>=40){winner=0;reason="capture";break}if(a[1].cf>=40){winner=1;reason="capture";break}
+    if(frame>=79){if(a[0].hp>a[1].hp)winner=0;else if(a[1].hp>a[0].hp)winner=1;else if(a[0].cf>a[1].cf)winner=0;else if(a[1].cf>a[0].cf)winner=1;reason="timeout";break}
     if(!a[0].alive){winner=1;reason="killed";break}if(!a[1].alive){winner=0;reason="killed";break}
     for(var ti=0;ti<a.length;ti++){var ag3=a[ti];if(ag3.sht>0&&--ag3.sht===0)ag3.sh=0;if(ag3.clt>0){ag3.clt--;if(ag3.clt===0)ag3.cl=0;if(tm(map,ag3.x,ag3.y).s&&ag3.clt>0)ag3.clt++}if(ag3.spt>0&&--ag3.spt===0)ag3.sp=0;if(ag3.frt>0&&--ag3.frt===0)ag3.fr=0;if(ag3.stt>0&&--ag3.stt===0)ag3.st=0;if(ag3.pot>0&&--ag3.pot===0)ag3.po=0;if(ag3.skc>0)ag3.skc--;if(ag3.wc>0)ag3.wc--}
     for(var ii=0;ii<its.length;ii++){var it2=its[ii];if(!it2.active&&it2.rs>0&&--it2.rs===0)it2.active=1}
