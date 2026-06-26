@@ -164,7 +164,7 @@ var DEFAULT_TREES={
   }
 };
 
-function parseStrategy(code) {
+function parseStrategyBySkill(skill){if(skill==="sprint")return DEFAULT_TREES.capturer;if(skill==="cloak"||skill==="poison")return DEFAULT_TREES.capturer;if(skill==="shield")return DEFAULT_TREES.tactical;if(skill==="freeze"||skill==="stun")return DEFAULT_TREES.capturer;return DEFAULT_TREES.aggressive}function parseStrategy(code) {
   if(!code)return DEFAULT_TREES.aggressive;
   // Match code patterns to strategy types
   if(code.indexOf("flee")>0||code.indexOf("hp")>0||code.indexOf("hp_below")>0)return DEFAULT_TREES.tactical;
@@ -180,7 +180,7 @@ async function sha256(t){var h=await crypto.subtle.digest("SHA-256",new TextEnco
 function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)}
 function rng(s){return function(){s|=0;s=(s+0x6d2b79f5)|0;var t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
 
-function genMap(seed){var R=rng(seed||Date.now()),W=18,H=12,CX=9,CY=6,t=[],y,x,i;for(y=0;y<H;y++){t[y]=[];for(x=0;x<W;x++)t[y][x]={type:"open"}}for(x=0;x<W;x++){t[0][x]={type:"wall"};t[H-1][x]={type:"wall"}}for(y=0;y<H;y++){t[y][0]={type:"wall"};t[y][W-1]={type:"wall"}}for(i=0;i<3+Math.floor(R()*3);i++){var wx=2+Math.floor(R()*(W-6)),wy=2+Math.floor(R()*(H-6)),dy,dx;for(dy=0;dy<1+Math.floor(R()*2);dy++)for(dx=0;dx<1+Math.floor(R()*3);dx++)if(wx+dx>0&&wx+dx<W-1&&wy+dy>0&&wy+dy<H-1&&Math.abs(wx+dx-1)>2&&Math.abs(wx+dx-W+2)>2&&Math.abs(wx+dx-CX)>2)t[wy+dy][wx+dx]={type:"wall"}}for(y=1;y<H-1;y++)for(x=1;x<W-1;x++)if(t[y][x].type==="open"&&R()<0.15)if(Math.abs(x-CX)+Math.abs(y-CY)>2||R()<0.3)t[y][x]= {type:"grass"};for(y=CY-2;y<=CY+2;y++)for(x=CX-2;x<=CX+2;x++)if(y>0&&y<H-1&&x>0&&x<W-1&&Math.abs(x-CX)+Math.abs(y-CY)<=2)t[y][x]={type:"open"};t[CY][CX+2]={type:"wall"};var sp;for(sp of[{x:1,y:H-2},{x:W-2,y:1}])for(dy=-1;dy<=1;dy++)for(dx=-1;dx<=1;dx++)t[sp.y+dy][sp.x+dx]={type:"open"};var wp=["sword","bow","spear"],its=[{x:2+Math.floor(R()*(CX-5)),y:CY+Math.floor(R()*(H-2-CY)),type:wp[Math.floor(R()*3)]},{x:CX+3+Math.floor(R()*(W-3-CX-3)),y:2+Math.floor(R()*(CY-2)),type:wp[Math.floor(R()*3)]}];return{width:W,height:H,tiles:t,playerSpawns:[{x:1,y:H-2},{x:W-2,y:1}],itemSpawns:its,capturePoint:{x:CX,y:CY,radius:2},theme:["balanced","forest","water","arena"][Math.floor(R()*4)]}}
+function genMap(seed){var R=rng(seed||Date.now()),W=18,H=12,CX=9,CY=6,t=[],y,x,i;for(y=0;y<H;y++){t[y]=[];for(x=0;x<W;x++)t[y][x]={type:"open"}}for(x=0;x<W;x++){t[0][x]={type:"wall"};t[H-1][x]={type:"wall"}}for(y=0;y<H;y++){t[y][0]={type:"wall"};t[y][W-1]={type:"wall"}}for(i=0;i<3+Math.floor(R()*3);i++){var wx=2+Math.floor(R()*(W-6)),wy=2+Math.floor(R()*(H-6)),dy,dx;for(dy=0;dy<1+Math.floor(R()*2);dy++)for(dx=0;dx<1+Math.floor(R()*3);dx++)if(wx+dx>0&&wx+dx<W-1&&wy+dy>0&&wy+dy<H-1&&Math.abs(wx+dx-1)>2&&Math.abs(wx+dx-W+2)>2&&Math.abs(wx+dx-CX)>2)t[wy+dy][wx+dx]={type:"wall"}}for(y=1;y<H-1;y++)for(x=1;x<W-1;x++)if(t[y][x].type==="open"&&R()<0.15)if(Math.abs(x-CX)+Math.abs(y-CY)>2||R()<0.3)t[y][x]= {type:"grass"};for(y=CY-2;y<=CY+2;y++)for(x=CX-2;x<=CX+2;x++)if(y>0&&y<H-1&&x>0&&x<W-1&&Math.abs(x-CX)+Math.abs(y-CY)<=2)t[y][x]={type:"open"};t[CY][CX+2]={type:"wall"};var sp;for(sp of[{x:4,y:8},{x:14,y:4}])for(dy=-1;dy<=1;dy++)for(dx=-1;dx<=1;dx++)t[sp.y+dy][sp.x+dx]={type:"open"};var wp=["sword","bow","spear"],its=[{x:2+Math.floor(R()*(CX-5)),y:CY+Math.floor(R()*(H-2-CY)),type:wp[Math.floor(R()*3)]},{x:CX+3+Math.floor(R()*(W-3-CX-3)),y:2+Math.floor(R()*(CY-2)),type:wp[Math.floor(R()*3)]}];return{width:W,height:H,tiles:t,playerSpawns:[{x:1,y:H-2},{x:W-2,y:1}],itemSpawns:its,capturePoint:{x:CX,y:CY,radius:3},theme:["balanced","forest","water","arena"][Math.floor(R()*4)]}}
 
 var WPN={sword:{dmg:30,range:1.5,cd:8},spear:{dmg:25,range:3,cd:10},bow:{dmg:20,range:8,cd:6}};
 var SKL={shield:{cd:20,dur:4},sprint:{cd:15,dur:6},cloak:{cd:25,dur:8},freeze:{cd:29,dur:2},stun:{cd:20,dur:6},poison:{cd:20,dur:4},teleport:{cd:40,dur:1}};
@@ -268,7 +268,7 @@ async function runGame(treeA, treeB, map, seed, skA, skB) {
     ps=ps.filter(function(p){return!(p.x<0||p.x>=map.width||p.y<0||p.y>=map.height||solid(map,Math.round(p.x),Math.round(p.y)))});
     for(var agi=0;agi<a.length;agi++){var ag2=a[agi];if(!ag2.alive)continue;for(var pj=ps.length-1;pj>=0;pj--){var p2=ps[pj];if(p2.o===ag2.id)continue;if(dist(ag2,p2)<2){var dmg2=p2.dmg*tm(map,ag2.x,ag2.y).dmg;if(ag2.sh){ag2.sh=0;ag2.sht=0;ps.splice(pj,1);continue}ag2.hp-=dmg2;ps.splice(pj,1);if(ag2.hp<=0){ag2.hp=0;ag2.alive=0}}}}
     var aIn=inCap(a[0],cp),bIn=inCap(a[1],cp);if(aIn&&!bIn)a[0].cf++;else if(bIn&&!aIn)a[1].cf++;
-    if(a[0].cf>=40){winner=0;reason="capture";break}if(a[1].cf>=40){winner=1;reason="capture";break}
+    if(a[0].cf>=5){winner=0;reason="capture";break}if(a[1].cf>=5){winner=1;reason="capture";break}
     if(frame>=79){if(a[0].hp>a[1].hp)winner=0;else if(a[1].hp>a[0].hp)winner=1;else if(a[0].cf>a[1].cf)winner=0;else if(a[1].cf>a[0].cf)winner=1;reason="timeout";break}
     if(!a[0].alive){winner=1;reason="killed";break}if(!a[1].alive){winner=0;reason="killed";break}
     for(var ti=0;ti<a.length;ti++){var ag3=a[ti];if(ag3.sht>0&&--ag3.sht===0)ag3.sh=0;if(ag3.clt>0){ag3.clt--;if(ag3.clt===0)ag3.cl=0;if(tm(map,ag3.x,ag3.y).s&&ag3.clt>0)ag3.clt++}if(ag3.spt>0&&--ag3.spt===0)ag3.sp=0;if(ag3.frt>0&&--ag3.frt===0)ag3.fr=0;if(ag3.stt>0&&--ag3.stt===0)ag3.st=0;if(ag3.pot>0&&--ag3.pot===0)ag3.po=0;if(ag3.skc>0)ag3.skc--;if(ag3.wc>0)ag3.wc--}
@@ -297,7 +297,7 @@ async function handle(event){
     var b=await body();
     var agents=await kvGet("agents");
     var key="tk_"+uid()+uid();
-    var tree=b.tree||parseStrategy(b.code);
+    var tree=b.tree||parseStrategyBySkill(b.skill||"shield");
     agents.push({name:b.name||"Agent-"+uid(),tree:tree,code:b.code||"",skill:b.skill||"shield",model:b.model||"human",elo:1200,wins:0,losses:0,draws:0,keyHash:await sha256(key),createdAt:new Date().toISOString(),lastBattle:null});
     await kvSet("agents",agents);
     return json({name:agents[agents.length-1].name,battleKey:key,skill:agents[agents.length-1].skill,model:agents[agents.length-1].model},201)
@@ -310,7 +310,7 @@ async function handle(event){
 
   if(m==="POST"&&url.pathname==="/api/agent/tank/simulate"){
     var b=await body();
-    var tree=b.tree||parseStrategy(b.code);
+    var tree=b.tree||parseStrategyBySkill(b.skill||"shield");
     var map=genMap(Date.now());
     var r=await runGame(tree,parseStrategy(null),map,Date.now(),b.skillType||"shield","shield");
     return json({winner:r.winner,resultReason:r.resultReason,totalFrames:r.totalFrames})
