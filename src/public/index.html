@@ -292,34 +292,56 @@ function buildTreeFromBehavior(fn) {
 }
 
 function buildRichTree(patterns, scenarios) {
+  // Analyze behavior from test runs
+  var stats={shoot:0,move:0,skill:0,pickup:0,flee:0,none:0};
+  var shootDirs={},moveDirs={};
+  for(var key in patterns){
+    for(var i=0;i<patterns[key].length;i++){
+      var a=patterns[key][i];
+      stats[a.action]=(stats[a.action]||0)+1;
+      if(a.action==="shoot"&&a.direction)shootDirs[a.direction]=(shootDirs[a.direction]||0)+1;
+      if(a.action==="move"&&a.direction)moveDirs[a.direction]=(moveDirs[a.direction]||0)+1;
+    }
+  }
+
+  var total=stats.shoot+stats.move+stats.skill+stats.pickup+stats.flee;
+  if(total===0)total=1;
+
+  // Find dominant action
+  var dominant="move",maxCount=0;
+  for(var k in stats){if(stats[k]>maxCount){maxCount=stats[k];dominant=k}}
+  var skillRate=stats.skill/total,shootRate=stats.shoot/total,pickupRate=stats.pickup/total,fleeRate=(stats.flee||0)/total;
+
   var seq=[];
 
-  // 1. Flee if low HP and enemy close
-  seq.push({
-    sequence:[
-      {if:{op:"hp_below",value:35},then:{action:"flee"}}
-    ]
-  });
+  // If the AI uses skill a lot, prioritize it
+  if(skillRate>0.1){
+    seq.push({if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}});
+  }
 
-  // 2. Pickup weapon if unarmed and near item
-  seq.push({
-    sequence:[
-      {if:{op:"near_item",value:3},then:{action:"pickup"}}
-    ]
-  });
+  // If the AI picks up items
+  if(pickupRate>0.05){
+    seq.push({if:{path:"self.weapon",op:"null"},then:{action:"pickup"}});
+  }
 
-  // 3. Skill if ready
-  seq.push({if:{path:"self.skillCooldown",op:"eq",value:0},then:{action:"skill"}});
+  // If the AI flees at low HP
+  if(fleeRate>0.03){
+    seq.push({if:{op:"hp_below",value:35},then:{action:"flee"}});
+  }
 
-  // 4. Shoot if armed, enemy in range, not in water
-  seq.push({
-    sequence:[
-      {if:{op:"no_enemy"},then:{action:"move",dir:"enemy"}},
-      {if:{op:"dist_lt",value:6},then:{action:"shoot",dir:"enemy"}},
-      {if:{op:"on_terrain",value:"grass"},then:{action:"move",dir:"enemy"}},
-      {action:"move",dir:"enemy"}
-    ]
-  });
+  // If the AI shoots a lot when enemy is around
+  if(shootRate>0.15){
+    seq.push({
+      sequence:[
+        {if:{op:"no_enemy"},then:{action:"move",dir:"enemy"}},
+        {if:{op:"dist_lt",value:(shootRate>0.3?8:5)},then:{action:"shoot",dir:"enemy"}},
+        {action:"move",dir:"enemy"}
+      ]
+    });
+  } else {
+    // Movement-focused strategy
+    seq.push({action:"move",dir:dominant==="move"?"enemy":"capture"});
+  }
 
   return {sequence:seq};
 }
