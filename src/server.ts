@@ -312,10 +312,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     json(res, {
       name,
-      tankKey,
+      battleKey: tankKey,
       skill,
       model,
-      agentGuideUrl: `http://localhost:${PORT}/agent-guide`,
+      guideUrl: `http://localhost:${PORT}/agent-guide`,
       message: "Give this battle key and guide URL to your AI agent.",
     }, 201);
     return;
