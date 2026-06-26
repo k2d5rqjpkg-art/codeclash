@@ -450,21 +450,22 @@ async function loadLeaderboard() {
 // History
 async function loadHistory() {
   try {
-    const data = await api('/api/history');
-    let html = '';
-    if (data.length === 0) {
+    var data = await api('/api/history');
+    var html = '';
+    if (!data||data.length===0) {
       html = '<p class="dim">暂无对战记录</p>';
     } else {
-      html = '<table><thead><tr><th>时间</th><th>对战</th><th>结果</th><th>原因</th><th>帧数</th></tr></thead><tbody>';
-      for (const r of data.slice(-20).reverse()) {
-        const icon = r.winner === r.a ? '🟦' : r.winner === r.b ? '🟥' : '⬜';
-        html += `<tr>
-          <td class="dim">${new Date(r.time).toLocaleString()}</td>
-          <td>${r.a} vs ${r.b}</td>
-          <td><strong>${r.winner || '平局'}</strong></td>
-          <td>${r.reason}</td>
-          <td>${r.frames}</td>
-        </tr>`;
+      html = '<table><thead><tr><th>时间</th><th>对战</th><th>结果</th><th>原因</th><th></th></tr></thead><tbody>';
+      for (var i=0;i<Math.min(data.length,20);i++) {
+        var r=data[i];
+        var icon = r.winner===r.a?'🟦':r.winner===r.b?'🟥':'⬜';
+        html += '<tr>'+
+          '<td class="dim">'+new Date(r.time).toLocaleString()+'</td>'+
+          '<td>'+r.a+' vs '+r.b+'</td>'+
+          '<td><strong>'+(r.winner||'平局')+'</strong></td>'+
+          '<td>'+r.reason+'</td>'+
+          '<td><button class="btn-secondary btn-sm" onclick="viewReplay(\''+r.id+'\')">📺</button></td>'+
+        '</tr>';
       }
       html += '</tbody></table>';
     }
@@ -497,7 +498,7 @@ async function challenge(opponent) {
 loadLeaderboard();
 
 // ── 2D Replay Viewer ──
-let replayData = null, replayTimer = null, replayIdx = 0, replaySpeed = 4;
+var replayData = null, replayTimer = null, replayIdx = 0, replaySpeed = 4;
 function replayPlay() {
   if (!replayData) return;
   replayStop();
@@ -517,11 +518,11 @@ function drawReplayFrame() {
 
   // Find last position events up to current frame
   const tileSize = 32;
-  const events = replayData.filter(e => e.frame <= replayIdx);
-  let aPos = { x: 1, y: 10 }, bPos = { x: 16, y: 1 };
-  let projs = [];
-  for (const e of events) {
-    if (e.action === 'move' && e.to) { if (e.objectId === 'agentA') { aPos.x = e.to[0]; aPos.y = e.to[1]; } else { bPos.x = e.to[0]; bPos.y = e.to[1]; } }
+  var events=replayData.filter(e => e.frame <= replayIdx);
+  var aPos = { x: 1, y: 10 }, bPos = { x: 16, y: 1 };
+  var projs = [];
+  for(var i=0;i<events.length;i++){var e=events[i] {
+    if (e.action === 'move' && e.to) { if (e.id==="A") { aPos.x = e.to[0]; aPos.y = e.to[1]; } else { bPos.x = e.to[0]; bPos.y = e.to[1]; } }
     if (e.action === 'created') projs.push({ x: e.x, y: e.y, owner: e.owner });
     if (e.action === 'damage') projs = projs.filter(p => !(Math.abs(p.x - (e.target === 'agentA' ? aPos.x : bPos.x)) < 2 && Math.abs(p.y - (e.target === 'agentA' ? aPos.y : bPos.y)) < 2));
   }
@@ -536,7 +537,7 @@ function drawReplayFrame() {
 
   // Draw projectiles
   for (const p of projs) {
-    ctx.fillStyle = p.owner === 'agentA' ? '#38bdf8' : '#f87171';
+    ctx.fillStyle = p.o==="A" ? '#38bdf8' : '#f87171';
     ctx.beginPath(); ctx.arc(p.x * tileSize + 16, p.y * tileSize + 16, 4, 0, Math.PI * 2); ctx.fill();
   }
 
