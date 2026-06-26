@@ -270,7 +270,7 @@ async function handle(event){
     var tree=b.tree||parseStrategy(b.code);
     agents.push({name:b.name||"Agent-"+uid(),tree:tree,code:b.code||"",skill:b.skill||"shield",model:b.model||"human",elo:1200,wins:0,losses:0,draws:0,keyHash:await sha256(key),createdAt:new Date().toISOString(),lastBattle:null});
     await kvSet("agents",agents);
-    return json({name:agents[agents.length-1].name,battleKey:key,skill:agents[agents.length-1].skill},201)
+    return json({name:agents[agents.length-1].name,battleKey:key,skill:agents[agents.length-1].skill,model:agents[agents.length-1].model},201)
   }
 
   if(url.pathname==="/api/agent/leaderboard"){
